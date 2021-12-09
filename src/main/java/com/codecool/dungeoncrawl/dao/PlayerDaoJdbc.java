@@ -76,9 +76,55 @@ public class PlayerDaoJdbc implements PlayerDao {
     }
 
     @Override
-    public List<PlayerModel> getAll() {
+    public PlayerModel get(String name) {
 
-        //?
-        return null;
+        try (Connection connection = dataSource.getConnection()) {
+            String sql = "SELECT  hp, x, y, strength, armor FROM player WHERE player_name = ?";
+            PreparedStatement st = connection.prepareStatement(sql);
+            st.setString(1, name);
+            ResultSet rs = st.executeQuery();
+
+            if (!rs.next()) {
+                return null;
+            }
+
+            PlayerModel player = new PlayerModel(rs.getInt("hp"), rs.getInt("x"), rs.getInt("y"), rs.getInt("strength"), rs.getInt("armor"));
+            return player;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public ArrayList<String> getAll() {
+
+        try (Connection connection = dataSource.getConnection()) {
+            String sql = "SELECT player_name FROM player";
+            PreparedStatement st = connection.prepareStatement(sql);
+
+            ResultSet resultSet = st.executeQuery();
+            if (!resultSet.next()) {
+                return null;
+            }
+
+            ArrayList<String> playerNames = new ArrayList<String>();
+
+
+            String firstEntry = resultSet.getString("player_name");
+            playerNames.add(firstEntry);
+            System.out.println("FIRST ENTRY IS " + firstEntry);
+            System.out.println("PLAYER NAMES CONTAINS " + playerNames);
+
+
+            while (resultSet.next()) {
+                String name = new String(resultSet.getString("player_name"));
+                System.out.println("IN PLAYER DAO, NAME: " + name);
+                playerNames.add(name);
+            }
+            System.out.println(playerNames);
+            return playerNames;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

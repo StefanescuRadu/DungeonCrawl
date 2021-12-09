@@ -3,6 +3,7 @@ package com.codecool.dungeoncrawl;
 import com.codecool.dungeoncrawl.dao.GameDatabaseManager;
 import com.codecool.dungeoncrawl.logic.*;
 import com.codecool.dungeoncrawl.logic.actors.*;
+import com.codecool.dungeoncrawl.model.PlayerModel;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -12,16 +13,21 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+import java.sql.Date;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 public class Main extends Application {
@@ -45,8 +51,11 @@ public class Main extends Application {
     Label armorLabel = new Label();
     Label keyLabel = new Label();
     Label inventoryLabel = new Label();
-    GameDatabaseManager dbManager;
+
+    GameDatabaseManager dbManager = new GameDatabaseManager();
+
     ModalHandler modal = new ModalHandler();
+
     Player player = map.getPlayer();
 
     Label currentPlayer = new Label("Player");
@@ -103,7 +112,8 @@ public class Main extends Application {
                 System.out.println("SAVE BUTTON CLICKED");
                 String currentMap = getCurrentMapAsString();
                 String otherMap = getOtherMapAsString();
-                modal.saveGameModal(dbManager, currentMap, otherMap, player);
+//                modal.saveGameModal(dbManager, currentMap, otherMap, player);
+                saveGameModal(dbManager, currentMap, otherMap, player);
             }
         });
         saveButton.setFocusTraversable(false);
@@ -112,7 +122,18 @@ public class Main extends Application {
         loadButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent actionEvent) {
+
                 System.out.println("LOAD BUTTON CLICKED");
+                ArrayList<String> savedGames = new ArrayList<>();
+                savedGames = dbManager.getPlayerNames();
+                System.out.println(savedGames);
+//                modal.loadGameModal(dbManager, savedGames);
+               loadGameModal(dbManager, savedGames);
+
+
+
+
+
             }
         });
         loadButton.setFocusTraversable(false);
@@ -271,11 +292,7 @@ public class Main extends Application {
                 enemyMove();
                 refresh();
                 break;
-//            case S:
-//                if (keyEvent.isControlDown()) {
-//                    modal.saveGameModal(dbManager, player);
-//                }
-//                break;
+
         }
     }
 
@@ -365,7 +382,66 @@ public class Main extends Application {
             armorLabel.setText("" + map.getPlayer().getArmor());
             keyLabel.setText("" + map.getPlayer().getInventory().getKeyInInventory());
             inventoryLabel.setText("" + map.getPlayer().showInventory());
+            currentPlayer.setText(""+map.getPlayer().getName());
         }
+    }
+
+    public void saveGameModal(GameDatabaseManager dbManager, String currentMap, String otherMap, Player player) {
+        TextField nameInput = new TextField();
+        Button save = new Button("Save");
+        Button cancel = new Button("Cancel");
+        VBox layout = new VBox(2);
+        layout.setPadding(new Insets(10, 10, 10, 10));
+        layout.getChildren().addAll(nameInput, save, cancel);
+        Scene saveScene = new Scene(layout, 350, 150);
+        Stage saveStage = new Stage();
+        saveStage.setTitle("Save game state");
+        saveStage.setScene(saveScene);
+        saveStage.show();
+
+
+        save.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent actionEvent) {
+                String saveName = nameInput.getText();
+                System.out.println(saveName);
+                dbManager.saveGame(currentMap, otherMap, new Date(System.currentTimeMillis()), saveName, player);
+                saveStage.close();
+            }
+        });
+        cancel.setOnAction(event -> saveStage.close());
+    }
+
+    public void loadGameModal(GameDatabaseManager dbManager, ArrayList<String> savedGames) {
+        VBox loadGamesLayout = new VBox();
+
+        for (int i = 0; i < savedGames.size(); i++) {
+            Button save = new Button(savedGames.get(i));
+            loadGamesLayout.getChildren().add(i, save);
+            save.setOnAction(new EventHandler<ActionEvent>() {
+                @Override
+                public void handle(ActionEvent actionEvent) {
+                    PlayerModel loadedPlayer;
+                    String selectedSave = save.getText();
+                    System.out.println(selectedSave);
+                    loadedPlayer = dbManager.loadPlayer(selectedSave);
+                    System.out.println(loadedPlayer);
+                    player.setHealth(loadedPlayer.getHp());
+                    player.setX(loadedPlayer.getX());
+                    player.setY(loadedPlayer.getY());
+                    player.setStrength(loadedPlayer.getStrength());
+                    player.setArmor(loadedPlayer.getArmor());
+                    player.setName(save.getText());
+                    refresh();
+                }
+            });
+
+        }
+        Scene loadScene = new Scene(loadGamesLayout, 350, 350);
+        Stage loadStage = new Stage();
+        loadStage.setTitle("Load Game");
+        loadStage.setScene(loadScene);
+        loadStage.show();
     }
 }
 
