@@ -20,6 +20,7 @@ public class ModalHandler {
 
     public void saveGameModal(GameDatabaseManager dbManager,String currentMap,String otherMap, Player player) {
         TextField nameInput = new TextField();
+
         Button save = new Button("Save");
         Button cancel = new Button("Cancel");
         VBox layout = new VBox(2);
@@ -27,17 +28,21 @@ public class ModalHandler {
         layout.getChildren().addAll(nameInput, save, cancel);
         Scene saveScene = new Scene(layout, 350, 150);
         Stage saveStage = new Stage();
+
+
         saveStage.setTitle("Save game state");
         saveStage.setScene(saveScene);
         saveStage.show();
-        String saveName = nameInput.getText();
-        System.out.println(saveName);
+
+
 
         save.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent actionEvent) {
+                String saveName = nameInput.getText();
                 dbManager.saveGame(currentMap, otherMap, new Date(System.currentTimeMillis()), saveName, player);
                 saveStage.close();
+                System.out.println(saveName);
             }
         });
 
